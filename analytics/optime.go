@@ -4,7 +4,6 @@ package analytics
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,9 +18,9 @@ type OptimeDoc struct {
 // GetOptime -
 func GetOptime(optime interface{}) int64 {
 	var ts int64
-	switch optime.(type) {
+	switch optime := optime.(type) {
 	case primitive.D:
-		doc := optime.(primitive.D)
+		doc := optime
 		for _, elem := range doc {
 			if elem.Key == "ts" {
 				b, _ := json.Marshal(elem.Value)
@@ -32,15 +31,15 @@ func GetOptime(optime interface{}) int64 {
 			}
 		}
 	case primitive.Timestamp:
-		b, _ := json.Marshal(optime.(primitive.Timestamp))
+		b, _ := json.Marshal(optime)
 		var optm OptimeDoc
 		json.Unmarshal(b, &optm)
 		ts = int64(optm.T)
 	case map[string]interface{}:
-		d := primitive.D{{Key: optime.(map[string]interface{})["Key"].(string), Value: optime.(map[string]interface{})["Value"]}}
+		d := primitive.D{{Key: optime["Key"].(string), Value: optime["Value"]}}
 		return GetOptime(d)
 	case []interface{}:
-		for _, intr := range optime.([]interface{}) {
+		for _, intr := range optime {
 			if optm, ok := intr.(map[string]interface{}); !ok {
 				continue
 			} else if optm["Key"].(string) != "ts" {
@@ -49,7 +48,7 @@ func GetOptime(optime interface{}) int64 {
 			return GetOptime(intr)
 		}
 	default:
-		log.Println(fmt.Sprintf("default => type: %T, value: %v\n", optime, optime))
+		log.Printf("default => type: %T, value: %v\n\n", optime, optime)
 	}
 	return ts
 }
